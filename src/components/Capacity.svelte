@@ -4,7 +4,7 @@
     import { getEpoch, getBlockNumber } from "$lib/connections";
     import type {ApiPromise} from "@polkadot/api";
 
-    let connected;
+    let connected: boolean;
     let localProviderId = 0;
     storeConnected.subscribe((val) => connected = val);
     let apiPromise: ApiPromise | undefined;
@@ -22,8 +22,8 @@
     let capacityDetails: CapacityDetails = defaultDetails;
 
     let signingAddress = ""
-    let epochNumber = 0n;
-    let blockNumber = 0n;
+    let epochNumber: bigint = 0n;
+    let blockNumber: bigint = 0n;
     storeBlockNumber.subscribe(val => blockNumber = val);
 
     transactionSigningAddress.subscribe(async (addr) => {

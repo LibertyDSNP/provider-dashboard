@@ -5,6 +5,10 @@
 <script lang=ts>
     import Connect from "../components/Connect.svelte";
     import Capacity from "../components/Capacity.svelte";
+    import Provider from "../components/Provider.svelte";
+    import AddControlKey from "../components/AddControlKey.svelte";
+    import KeySelection from "../components/KeySelection.svelte";
+    import Stake from "../components/Stake.svelte";
     import {
         storeBlockNumber,
         storeConnected,
@@ -13,12 +17,9 @@
         storeProviderId,
         storeToken
     } from "$lib/stores";
-    import Provider from "../components/Provider.svelte";
-    import AddControlKey from "../components/AddControlKey.svelte";
-    import KeySelection from "../components/KeySelection.svelte";
 
     let token = '';
-    let blockNumber = 0;
+    let blockNumber: bigint = 0n;
     let connected = false;
     let validAccounts = {};
     let signingAddress = "";
@@ -73,3 +74,4 @@
     </fieldset>
 </form>
 <AddControlKey {providerId} {validAccounts}/>
+<Stake/>
