@@ -25,6 +25,9 @@ export const GENESIS_HASHES: Record<string, string> = {
 type AddKeyData = { msaId: string; expiration: string; newPublicKey: string; }
 type SigningKey = InjectedAccountWithMeta | KeyringPair
 
+export const CENTS = 1000000n;
+export const DOLLARS = 100n * CENTS;
+
 // No functions in here should have to talk to a component
 export async function getBlockNumber(api: ApiPromise): Promise<BigInt> {
     if (api && await api.isReady) {
@@ -72,6 +75,27 @@ export async function submitAddControlKey(api: ApiPromise,
         const newKeyProof = { Sr25519: newKeySignature };
         const extrinsic = api.tx.msa.addPublicKeyToMsa(signingAccount.address, ownerKeyProof, newKeyProof, newKeyPayload);
        useKeyring ?
+            await submitExtrinsicWithKeyring(extrinsic, signingAccount as KeyringPair, callback):
+            await submitExtrinsicWithExtension(extension as InjectedExtension, extrinsic, signingAccount as InjectedAccountWithMeta, callback);
+
+    } else {
+        console.debug("api is not available.");
+    }
+}
+
+// creates the payloads and gets or creates the signatures, then submits the extrinsic
+export async function submitStake(api: ApiPromise,
+                                          extension: InjectedExtension | undefined,
+                                          signingAccount: SigningKey,
+                                          providerId: number,
+                                          stakeAmount: bigint,
+                                          endpointURL: string,
+                                          callback: (statusStr: string) => void) {
+    if (api && await api.isReady) {
+        const useKeyring: boolean = isLocalhost(endpointURL);
+
+        const extrinsic = api.tx.capacity.stake(providerId, stakeAmount);
+        useKeyring ?
             await submitExtrinsicWithKeyring(extrinsic, signingAccount as KeyringPair, callback):
             await submitExtrinsicWithExtension(extension as InjectedExtension, extrinsic, signingAccount as InjectedAccountWithMeta, callback);
 
@@ -140,7 +164,7 @@ async function submitExtrinsicWithExtension(extension: InjectedExtension,
     }
 }
 
-// Use the built-in tes accounts to submit an extrinsic
+// Use the built-in test accounts to submit an extrinsic
 async function submitExtrinsicWithKeyring(
         extrinsic: SubmittableExtrinsic,
         signingAccount: KeyringPair,

@@ -1,7 +1,7 @@
 <script lang="ts">
-    import {dotApi, storeConnected, storeCurrentAction, storeProviderId, transactionSigningAddress} from "$lib/stores";
+    import {dotApi, storeConnected, storeCurrentAction, storeProviderId, storeToken, storeValidAccounts, transactionSigningAddress} from "$lib/stores";
     import type {ApiPromise} from "@polkadot/api";
-    import { submitAddControlKey } from "$lib/connections";
+    import { submitStake } from "$lib/connections";
     import {ActionForms, defaultDotApi} from "$lib/storeTypes";
     import KeySelection from "./KeySelection.svelte";
     import {onMount} from "svelte";
@@ -17,6 +17,7 @@
     let web3FromSource;
     let web3Enable;
     let showTransactionStatus = false;
+    let stakeAmount: bigint = 0n;
     export let txnStatuses: Array<string> = []
 
     onMount(async () => {
@@ -25,14 +26,15 @@
         web3Enable = extension.web3Enable;
     })
 
-    let providerId = 0;
+    export let providerId = 0;
     export let validAccounts = {};
 
     storeConnected.subscribe(val => connected = val);
     dotApi.subscribe(api => thisDotApi = api);
     transactionSigningAddress.subscribe(val => signingAddress = val);
-    storeCurrentAction.subscribe(val => showSelf = val == ActionForms.AddControlKey);
+    storeCurrentAction.subscribe(val => showSelf = val == ActionForms.Stake);
     storeProviderId.subscribe(val => providerId = val);
+    storeValidAccounts.subscribe((val) =>  validAccounts = val);
 
     const hideSelf = () => {
         storeCurrentAction.update(val => val = ActionForms.NoForm);
@@ -45,24 +47,21 @@
     const clearTxnStatuses = () => txnStatuses = new Array<string>();
 
     const stake = async (evt: Event) => {
-        /*
-        // TODO: Add the details for staking
         clearTxnStatuses();
         let endpointURI: string = thisDotApi.selectedEndpoint || '';
         evt.preventDefault();
         if (selectedKey === '') {
             alert("Please choose a key to add.")
         } else if (isFunction(web3FromSource) && isFunction(web3Enable)){
-            let newKeys = validAccounts[selectedKey];
             let signingKeys = validAccounts[signingAddress]
             showTransactionStatus = true;
             if (isLocalhost(endpointURI)) {
-                await submitAddControlKey(
+                await submitStake(
                     thisDotApi.api as ApiPromise,
                     undefined,
-                    newKeys,
                     signingKeys,
                     providerId,
+                    stakeAmount,
                     endpointURI as string,
                     addNewTxnStatus,
                 );
@@ -70,19 +69,18 @@
                 const extensions = web3Enable('Frequency parachain provider dashboard: Adding Keys');
                 if (extensions.length !== 0) {
                     const injectedExtension = await web3FromSource(signingKeys.meta.source);
-                    await submitAddControlKey(
+                    await submitStake(
                         thisDotApi.api as ApiPromise,
                         injectedExtension,
-                        newKeys,
                         signingKeys,
                         providerId,
+                        stakeAmount,
                         endpointURI as string,
                         addNewTxnStatus,
                     );
                 }
             }
         }
-        */
     }
 </script>
 <style>
@@ -117,6 +115,8 @@
                 bind:selectedOption={selectedKey}
                 {validAccounts}
         />
+        <label for=stakingInput >Amount to Stake in Tokens</label>
+        <input type="number" bind:value={stakeAmount} />
         <button on:click={stake}>Stake</button>
         <button on:click={hideSelf}>Cancel Stake</button>
         <TransactionStatus

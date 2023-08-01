@@ -18,5 +18,6 @@ export const defaultDotApi: DotApi = {
 export enum ActionForms  {
     NoForm,
     AddControlKey,
+    Stake,
     OtherForm,
 }

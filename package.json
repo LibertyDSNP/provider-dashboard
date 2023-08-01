@@ -43,6 +43,7 @@
 		"@polkadot/util": "^12.3.2",
 		"@testing-library/svelte": "^4.0.3",
 		"@vitest/ui": "^0.33.0",
+		"buffer": "^6.0.3",
 		"jsdom": "^22.1.0",
 		"rxjs": "^7.8.1",
 		"vitest": "^0.33.0"
