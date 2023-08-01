@@ -25,8 +25,8 @@ export const GENESIS_HASHES: Record<string, string> = {
 type AddKeyData = { msaId: string; expiration: string; newPublicKey: string; }
 type SigningKey = InjectedAccountWithMeta | KeyringPair
 
-export const CENTS = 1000000n;
-export const DOLLARS = 100n * CENTS;
+export const CENTS: bigint = 1000000n;
+export const DOLLARS: bigint = 100n * CENTS;
 
 // No functions in here should have to talk to a component
 export async function getBlockNumber(api: ApiPromise): Promise<BigInt> {

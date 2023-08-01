@@ -1,7 +1,7 @@
 <script lang="ts">
     import {dotApi, storeConnected, storeCurrentAction, storeProviderId, storeToken, storeValidAccounts, transactionSigningAddress} from "$lib/stores";
     import type {ApiPromise} from "@polkadot/api";
-    import { submitStake } from "$lib/connections";
+    import { DOLLARS, submitStake } from "$lib/connections";
     import {ActionForms, defaultDotApi} from "$lib/storeTypes";
     import KeySelection from "./KeySelection.svelte";
     import {onMount} from "svelte";
@@ -17,8 +17,11 @@
     let web3FromSource;
     let web3Enable;
     let showTransactionStatus = false;
-    let stakeAmount: bigint = 0n;
+    let stakeAmount: bigint = 1n;
+    let token = '';
     export let txnStatuses: Array<string> = []
+
+    $: stakeAmountInDollars = BigInt.asUintN(64, stakeAmount) * BigInt.asUintN(64, DOLLARS);
 
     onMount(async () => {
         const extension = await import("@polkadot/extension-dapp");
@@ -35,6 +38,7 @@
     storeCurrentAction.subscribe(val => showSelf = val == ActionForms.Stake);
     storeProviderId.subscribe(val => providerId = val);
     storeValidAccounts.subscribe((val) =>  validAccounts = val);
+    storeToken.subscribe(val => token = val);
 
     const hideSelf = () => {
         storeCurrentAction.update(val => val = ActionForms.NoForm);
@@ -53,7 +57,7 @@
         if (selectedKey === '') {
             alert("Please choose a key to add.")
         } else if (isFunction(web3FromSource) && isFunction(web3Enable)){
-            let signingKeys = validAccounts[signingAddress]
+            let signingKeys = validAccounts[selectedKey]
             showTransactionStatus = true;
             if (isLocalhost(endpointURI)) {
                 await submitStake(
@@ -61,7 +65,7 @@
                     undefined,
                     signingKeys,
                     providerId,
-                    stakeAmount,
+                    stakeAmountInDollars,
                     endpointURI as string,
                     addNewTxnStatus,
                 );
@@ -74,7 +78,7 @@
                         injectedExtension,
                         signingKeys,
                         providerId,
-                        stakeAmount,
+                        stakeAmountInDollars,
                         endpointURI as string,
                         addNewTxnStatus,
                     );
@@ -82,6 +86,18 @@
             }
         }
     }
+
+    function handleInput(evt: Event) {
+        const target = evt.target as HTMLInputElement;
+        if (target !== null && target.value === '') {
+            stakeAmount = 0n;
+        }
+        else if (target !== null && target.value !== null) {
+            stakeAmount = BigInt(target.value);
+            return;
+        }
+    }
+
 </script>
 <style>
     .directions {
@@ -90,6 +106,19 @@
     .directions li {
         line-height: 1.1em;
     }
+    .input-container {
+        display: flex;
+        align-items: center;
+    }
+    .input-container input {
+        flex: 1;
+    }
+    .input-container .units {
+        flex: 1;
+        margin-left: 0.5em;
+        align-content: center;
+    }
+
 </style>
 <div class:hidden={!connected}>
     <h3>Stake to Provider Id {providerId}</h3>
@@ -116,7 +145,10 @@
                 {validAccounts}
         />
         <label for=stakingInput >Amount to Stake in Tokens</label>
-        <input type="number" bind:value={stakeAmount} />
+        <div class="input-container">
+            <input type="number" on:input={handleInput} id=stakingInput />
+            <span class="units">{token}</span>
+        </div>
         <button on:click={stake}>Stake</button>
         <button on:click={hideSelf}>Cancel Stake</button>
         <TransactionStatus
