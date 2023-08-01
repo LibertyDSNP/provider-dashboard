@@ -119,6 +119,11 @@
         align-content: center;
     }
 
+    #stakingInput::-webkit-inner-spin-button,
+    #stakingInput::-webkit-outer-spin-button {
+        margin-left: 10px;
+    }
+
 </style>
 <div class:hidden={!connected}>
     <h3>Stake to Provider Id {providerId}</h3>
@@ -146,7 +151,7 @@
         />
         <label for=stakingInput >Amount to Stake in Tokens</label>
         <div class="input-container">
-            <input type="number" on:input={handleInput} id=stakingInput />
+            <input type="number" id=stakingInput value="1" style="text-align: right;" on:input={handleInput} />
             <span class="units">{token}</span>
         </div>
         <button on:click={stake}>Stake</button>
