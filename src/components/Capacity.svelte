@@ -8,7 +8,8 @@
   import { balanceToHuman } from '$lib/utils.js';
   import ListCard from './ListCard.svelte';
   import { ActionForms } from '$lib/storeTypes.js';
-
+  import Stake from './Stake.svelte';
+  
   let epochNumber = 0n;
 
   let apiPromise: ApiPromise | undefined;
@@ -19,6 +20,8 @@
   });
   let blockNumber = 0n;
   storeBlockNumber.subscribe((val) => (blockNumber = val));
+
+  $: showStakeToProvider = false;
 
   export let token = '';
 
@@ -78,5 +81,6 @@
 </script>
 
 <ListCard title="Capacity" list={capacityList} errorMessage={errMsg}>
-  <button on:click={showStake} class="btn-primary">Stake To Provider</button>
+  <button on:click|preventDefault={() => (showStakeToProvider = true)} class="btn-primary">Stake to Provider</button>
+  <Stake isOpen={showStakeToProvider} close={() => (showStakeToProvider = false)} />
 </ListCard>

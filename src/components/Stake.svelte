@@ -1,18 +1,23 @@
 <script lang="ts">
-  import { dotApi, storeCurrentAction, storeToken } from '$lib/stores';
+  import { dotApi, storeToken } from '$lib/stores';
   import type { ApiPromise } from '@polkadot/api';
   import { DOLLARS, submitStake, type TxnFinishedCallback } from '$lib/connections';
-  import { ActionForms, defaultDotApi } from '$lib/storeTypes';
-  import KeySelection from './KeySelection.svelte';
+  import { defaultDotApi } from '$lib/storeTypes';
   import { onMount } from 'svelte';
   import { isFunction } from '@polkadot/util';
-  import { isLocalhost } from '$lib/utils';
+  import { formatAccount, isLocalhost } from '$lib/utils';
   import TransactionStatus from './TransactionStatus.svelte';
   import type { web3Enable, web3FromSource } from '@polkadot/extension-dapp';
-  import type { AccountMap } from '$lib/polkadotApi';
+  import DropDownMenu from './DropDownMenu.svelte';
+  import Modal from './Modal.svelte';
+  import { user } from '$lib/stores/userStore';
+  import { providerAccountsStore } from '$lib/stores/accountsStore';
+  import BlockSection from './BlockSection.svelte';
+
+  export let isOpen = false;
+  export let close = () => {};
 
   let thisDotApi = defaultDotApi;
-  let showSelf: boolean = false; // eslint-disable-line no-unused-vars
   let selectedKey: string = '';
   let thisWeb3FromSource: typeof web3FromSource;
   let thisWeb3Enable: typeof web3Enable;
@@ -30,12 +35,9 @@
   });
 
   export let providerId = 0;
-  export let validAccounts: AccountMap = {};
-  export let cancelAction = () => {};
   export let txnFinished: TxnFinishedCallback = (succeeded: boolean) => {};
 
   dotApi.subscribe((api) => (thisDotApi = api));
-  storeCurrentAction.subscribe((val) => (showSelf = val == ActionForms.Stake));
   storeToken.subscribe((val) => (token = val));
 
   const addNewTxnStatus = (txnStatus: string) => {
@@ -49,13 +51,12 @@
     if (selectedKey === '') {
       alert('Please choose a key to stake from.');
     } else {
-      let signingKeys = validAccounts[selectedKey];
       showTransactionStatus = true;
       if (isLocalhost(endpointURI)) {
         await submitStake(
           thisDotApi.api as ApiPromise,
           undefined,
-          signingKeys,
+          $user.signingKey!,
           providerId,
           stakeAmountInDollars,
           endpointURI as string,
@@ -66,11 +67,11 @@
         if (isFunction(thisWeb3FromSource) && isFunction(thisWeb3Enable)) {
           const extensions = await thisWeb3Enable('Frequency parachain provider dashboard: Adding Keys');
           if (extensions.length !== 0) {
-            const injectedExtension = await thisWeb3FromSource(signingKeys.meta.source.toString());
+            const injectedExtension = await thisWeb3FromSource($user.signingKey!.meta.source!);
             await submitStake(
               thisDotApi.api as ApiPromise,
               injectedExtension,
-              signingKeys,
+              $user.signingKey!,
               providerId,
               stakeAmountInDollars,
               endpointURI as string,
@@ -94,37 +95,38 @@
   }
 </script>
 
-<div class:hidden={false} class="action-card basis-1/2">
-  <p class="action-card-title">
-    Stake to Provider Id {providerId}
-  </p>
-  <div>
-    <ol class="ml-4 mt-4 list-decimal font-light">
-      <li>Ensure the control key has a FRQCY balance.</li>
-      <li>Click 'Stake'</li>
-      <li>This will require 1 signature to send the transaction.</li>
-    </ol>
-  </div>
-  <form class="mt-8">
-    <KeySelection
-      component="SelectControlKey"
-      selectLabel="Key to Stake From"
-      bind:selectedOption={selectedKey}
-      {validAccounts}
-      classOverrides="border-2 rounded-lg"
-    />
-    <div class="mt-6">
-      <label for="stakingInput">Amount to Stake in <span class="units">{token}</span></label>
-      <div class="input-container mt-2">
-        <input type="number" id="stakingInput" value="1" on:input={handleInput} />
+<Modal id="stake-to-provider" {isOpen} {close}>
+  <BlockSection title="Stake to Provider">
+    <form class="column w-[320px]">
+      <DropDownMenu
+        id="stake-using-key"
+        label="Wallet Address"
+        selected={$user.address}
+        options={Array.from($providerAccountsStore.values())}
+        formatter={formatAccount}
+        onChange={() => {}}
+      />
+      <div class="mt-6">
+        <label for="stakingInput">Amount in <span class="units">{token}</span></label>
+        <div class="input-container mt-2">
+          <input type="number" id="stakingInput" value="1" on:input={handleInput} />
+        </div>
       </div>
-    </div>
-    <div class="flex w-[350px] justify-between">
-      <button on:click|preventDefault={stake} class="btn-primary">Stake</button>
-      <button on:click|preventDefault={cancelAction} class="btn-no-fill">Cancel</button>
-    </div>
-  </form>
-</div>
+      <div class="flex w-[350px] items-end justify-between">
+        <button on:click|preventDefault={stake} class="btn-primary">Stake</button>
+        <button class="btn-no-fill" on:click|preventDefault={close}>Cancel</button>
+      </div>
+    </form>
+      <span class="min-w-full border-b border-b-divider" />
+      <div>
+        <div class="label mb-2">Requirements</div>
+        <ol class="ml-3.5 list-decimal text-xs">1. Ensure the control key has a FRQCY balance.</ol>
+        <ol class="ml-3.5 list-decimal text-xs">2. Click 'Stake'</ol>
+        <ol class="ml-3.5 list-decimal text-xs">3. This will require 1 signature to send the transaction.</ol>
+      </div>
+    </BlockSection
+  >
+</Modal>
 <TransactionStatus bind:showSelf={showTransactionStatus} statuses={txnStatuses} />
 
 <style>
